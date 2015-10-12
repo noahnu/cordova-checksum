@@ -1,8 +1,11 @@
 var exec = require('cordova/exec');
 
 var Checksum = {
-	get : function(path, success, error){
-		exec(success, error, "Checksum", "get", [path]);
+	forFile : function(path, success, error){
+		exec(success, error, "Checksum", "forFile", [path]);
+	},
+	forString : function(str, success, error){
+		exec(success, error, "Checksum", "forString", [str]);
 	}
 };
 

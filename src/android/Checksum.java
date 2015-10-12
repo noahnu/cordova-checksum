@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 
 import android.util.Log;
 import android.net.Uri;
@@ -26,15 +27,19 @@ public class Checksum extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if (action.equals("get")) {
+        if (action.equals("forFile")) {
             String path = args.getString(0);
-            this.checksum(path, callbackContext);
+            this.checksumFile(path, callbackContext);
+            return true;
+        } else if (action.equals("forString")) {
+            String str = args.getString(0);
+            this.checksumString(str, callbackContext);
             return true;
         }
         return false;
     }
 
-    private void checksum(final String path, final CallbackContext callbackContext) {
+    private void checksumFile(final String path, final CallbackContext callbackContext) {
         Log.i(LOG_TAG, "Beginning checksum routine.");
 		cordova.getThreadPool().execute(new Runnable(){
 			public void run() {
@@ -61,6 +66,32 @@ public class Checksum extends CordovaPlugin {
 						callbackContext.success(hexString);
 					} else {
 						throw new Exception("Invalid file.");
+					}
+				} catch (Exception ex) {
+					callbackContext.error(ex.getMessage());
+				}
+			}
+		});
+    }
+	
+	private void checksumString(final String str, final CallbackContext callbackContext) {
+        Log.i(LOG_TAG, "Beginning checksum routine.");
+		cordova.getThreadPool().execute(new Runnable(){
+			public void run() {
+				try {
+					if(str != null && !str.isEmpty()){
+						MessageDigest digest = MessageDigest.getInstance("SHA1");
+						digest.update(str.getBytes(Charset.forName("UTF-8")));
+						
+						byte[] digestBytes = digest.digest();
+						BigInteger big = new BigInteger(1, digestBytes);
+						String hexString = String.format("%0" + (digestBytes.length << 1) + "X", big);
+						
+						Log.i(LOG_TAG, "SHA-1 for " + str + " = " + hexString);
+						
+						callbackContext.success(hexString);
+					} else {
+						throw new Exception("Empty string.");
 					}
 				} catch (Exception ex) {
 					callbackContext.error(ex.getMessage());
